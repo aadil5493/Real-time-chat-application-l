@@ -5,19 +5,33 @@ const cors = require("cors");
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-    cors: { origin: "*" }
-});
-
 const PORT = process.env.PORT || 8000; // Render provides a dynamic port
+
+// CORS Configuration
+app.use(cors({
+    origin: "*", // Allow all origins
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type"]
+}));
+
+// Serve Static Files (index.html, client.js, style.css)
+app.use(express.static("public"));
+
+// Socket.io Configuration
+const io = new Server(server, {
+    cors: {
+        origin: "*", // Change this if hosting client separately
+        methods: ["GET", "POST"]
+    },
+    transports: ["websocket", "polling"] // Ensures mobile compatibility
+});
 
 const users = {};
 
-app.use(cors()); 
-app.use(express.static("public")); // Serve static files (index.html, client.js, style.css)
-
-// WebSocket connection
+// WebSocket Connection
 io.on("connection", socket => {
+    console.log("New user connected:", socket.id);
+
     socket.on('new-user-joined', name => {
         if (name && name.trim() !== "") {
             users[socket.id] = name;
@@ -49,7 +63,7 @@ io.on("connection", socket => {
     });
 });
 
-// Start server
+// Start Server
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
